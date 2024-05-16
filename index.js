@@ -50,11 +50,31 @@ async function run() {
       }
     });
 
-    // user get
+    // User login endpoint
+    app.post("/login", async (req, res) => {
+      const { email, password, role } = req.body;
+
+      if (!email || !password || !role) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      try {
+        const user = await userCollection.findOne({ email, role });
+
+        if (user && (await bcrypt.compare(password, user.password))) {
+          res.status(200).json({ message: "Login successful" });
+        } else {
+          res.status(401).json({ message: "Invalid email, password, or role" });
+        }
+      } catch (error) {
+        console.error("Error during login:", error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
+    // Get all users
     app.get("/user", async (req, res) => {
-      const query = {};
-      const cursor = userCollection.find(query);
-      const users = await cursor.toArray();
+      const users = await userCollection.find({}).toArray();
       res.send(users);
     });
   } finally {
