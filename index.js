@@ -26,20 +26,31 @@ async function run() {
     const userCollection = client.db("furrever-pawfect").collection("user");
 
     // user post
-     app.post("/user", async (req, res) => {
-       const { name, email, password, role } = req.body;
-       const hashedPassword = await bcrypt.hash(password, 10);
-       const user = { name, email, password: hashedPassword, role };
-       const result = await userCollection.insertOne(user);
+    app.post("/user", async (req, res) => {
+      const { name, email, password, role } = req.body;
 
-       if (result.insertedCount === 1) {
-         res.status(201).json({ message: "User added successfully" });
-       } else {
-         res.status(500).json({ message: "Failed to add user" });
-       }
-     });
+      // Check if all required fields are present
+      if (!name || !email || !password || !role) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
 
-    //user get
+      try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const user = { name, email, password: hashedPassword, role };
+        const result = await userCollection.insertOne(user);
+        if (result.insertedCount === 1) {
+          res.status(201).json({ message: "User added successfully" });
+        } else {
+          res.status(500).json({ message: "Failed to add user" });
+        }
+      } catch (error) {
+        console.error("Error hashing password:", error);
+        res.status(500).json({ message: "Error hashing password" });
+      }
+    });
+
+    // user get
     app.get("/user", async (req, res) => {
       const query = {};
       const cursor = userCollection.find(query);
@@ -47,6 +58,7 @@ async function run() {
       res.send(users);
     });
   } finally {
+    // Ensure client will close when you finish/error
   }
 }
 
