@@ -24,8 +24,8 @@ async function run() {
     await client.connect();
 
     const userCollection = client.db("furrever-pawfect").collection("user");
-
-    // user post
+    
+    //user post
     app.post("/user", async (req, res) => {
       const { name, email, password, role } = req.body;
 
@@ -47,6 +47,33 @@ async function run() {
       } catch (error) {
         console.error("Error hashing password:", error);
         res.status(500).json({ message: "Error hashing password" });
+      }
+    });
+
+    // user update
+    app.put("/user", async (req, res) => {
+      const { _id, name, email, password, role } = req.body;
+
+      if (!_id || !name || !email || !password || !role) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const updatedUser = { name, email, password: hashedPassword, role };
+        const result = await userCollection.updateOne(
+          { _id: ObjectId(_id) },
+          { $set: updatedUser }
+        );
+        if (result.modifiedCount === 1) {
+          res.status(200).json({ message: "User updated successfully" });
+        } else {
+          res.status(500).json({ message: "Failed to update user" });
+        }
+      } catch (error) {
+        console.error("Error updating user:", error);
+        res.status(500).json({ message: "Server error" });
       }
     });
 
